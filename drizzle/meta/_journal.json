@@ -22,6 +22,20 @@
       "when": 1790656499305,
       "tag": "0002_better_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790665190571,
+      "tag": "0003_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790665197260,
+      "tag": "0004_order_stock_functions",
+      "breakpoints": true
     }
   ]
 }

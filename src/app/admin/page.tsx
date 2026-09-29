@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ReconcileOrdersButton } from "@/components/admin/reconcile-orders-button";
 import { ListingHeader } from "@/components/product-listing";
 import { getCatalogueCounts } from "@/db/queries/products";
 import { getRecentUsers, getUserStats } from "@/db/queries/users";
@@ -39,6 +40,17 @@ export default async function AdminPage() {
             </div>
           ))}
         </dl>
+
+        <section aria-labelledby="orders-title" className="mt-12">
+          <h2 id="orders-title" className="type-label mb-2 text-ink-muted">
+            Orders
+          </h2>
+          <p className="type-small mb-4 max-w-prose text-ink-muted">
+            Webhooks keep orders in sync with Stripe. If they were down, reconcile settles orders
+            still waiting on a payment that should have finished, and releases their stock.
+          </p>
+          <ReconcileOrdersButton />
+        </section>
 
         <section aria-labelledby="recent-title" className="mt-12">
           <h2 id="recent-title" className="type-label mb-4 text-ink-muted">

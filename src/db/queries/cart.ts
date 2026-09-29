@@ -29,6 +29,8 @@ export type BagLineView = {
     oneSize: boolean;
     /* Whole currency units. */
     price: number;
+    /* The same price in cents, for checkout. */
+    unitPriceCents: number;
     compareAtPrice?: number;
   };
   /* What the cookie asked for. */
@@ -86,6 +88,7 @@ export async function getBagDetails(lines: BagLine[]): Promise<BagDetails> {
         image: row.images[0] ?? { src: "", alt: "" },
         oneSize: row.stock.length === 1 && row.stock[0]?.size === "One size",
         price: row.price / 100,
+        unitPriceCents: row.price,
         compareAtPrice: row.compareAtPrice === null ? undefined : row.compareAtPrice / 100,
       },
       requested: line.quantity,

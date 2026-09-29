@@ -22,6 +22,8 @@ There is no test framework set up yet.
 
 Copy `.env.example` to `.env`: `DATABASE_URL` (Neon **pooled** connection string), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (`http://localhost:3000` locally). `src/db/index.ts` throws at import time if `DATABASE_URL` is missing, and because the auth route imports it, `npm run build` needs `DATABASE_URL` set too. drizzle-kit loads `.env` itself via `dotenv/config`.
 
+Checkout also needs `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Use a sandbox **restricted** key (`rk_`) with write access to Checkout Sessions and read access to PaymentIntents. The client is created lazily (`getStripe()` in `src/lib/stripe.ts`), so the build and non-payment pages don't need either variable. Locally, run `stripe listen --forward-to localhost:3000/api/stripe/webhook` and use the `whsec_` value it prints. `BETTER_AUTH_URL` is also used to build Checkout's success and cancel URLs.
+
 ## Architecture
 
 Request flow for auth: `authClient` (`src/lib/auth-client.ts`, browser, same-origin `/api/auth`) → catch-all route `src/app/api/auth/[...all]/route.ts` (`toNextJsHandler(auth)`) → `auth` (`src/lib/auth.ts`, server only) → `drizzleAdapter(db, { provider: "pg" })` → `db` (`src/db/index.ts`, Drizzle over Neon's HTTP driver `drizzle-orm/neon-http`).
@@ -50,8 +52,18 @@ Request flow for auth: `authClient` (`src/lib/auth-client.ts`, browser, same-ori
 
 - Built: the homepage (`src/app/page.tsx`, sections in `src/components/home/`), the product detail page (`src/app/products/[slug]/page.tsx`, parts in `src/components/product/`) and the site header/footer (rendered from `layout.tsx`). Images are from Unsplash (host allowed in `next.config.ts`).
 - Also built: `/shop`, filterable category pages (`/[category]`), `/new-in`, editorial collections (`/collections/[slug]`), search (`/search`), and auth: `/sign-in`, `/sign-up`, `/account` (customers) and `/admin` (admins).
-- Shopping bag (`/bag`): stored in the `atelier_bag` cookie as `[productId, size, quantity]` references only, with no prices or stock (`src/lib/cart.ts`, `src/lib/bag-cookie.ts`). The cookie is untrusted input. Mutations go through the server actions in `src/app/bag/actions.ts`, which validate arguments and clamp every quantity to **live** `product_stock`. The bag page reads prices and stock live (`src/db/queries/cart.ts`), totals in cents, and shows over-stock lines reduced and missing or sold-out lines as unavailable. The cookie is not httpOnly so the header's client `BagLink` can show a count without making pages dynamic. The bag holds no stock reservation, so checkout must re-check stock atomically. The bag works signed out and is per browser.
-- Not built yet: checkout, orders, and account features beyond viewing details and signing out. The newsletter form only confirms client-side.
+- Shopping bag (`/bag`): stored in the `atelier_bag` cookie as `[productId, size, quantity]` references only, with no prices or stock (`src/lib/cart.ts`, `src/lib/bag-cookie.ts`). The cookie is untrusted input. Mutations go through the server actions in `src/app/bag/actions.ts`, which validate arguments and clamp every quantity to **live** `product_stock`. The bag page reads prices and stock live (`src/db/queries/cart.ts`), totals in cents, and shows over-stock lines reduced and missing or sold-out lines as unavailable. The cookie is not httpOnly so the header's client `BagLink` can show a count without making pages dynamic. The bag itself holds no stock; checkout reserves it. The bag works signed out and is per browser.
+- Checkout (Stripe-hosted Checkout Sessions, guest or signed in, USD, no shipping address or tax yet):
+  - `startCheckout` (`src/app/checkout/actions.ts`) re-reads the bag live and refuses if any line changed. It then creates a `pending` order in `orders`/`order_items` (`src/db/schema/orders.ts`) with price snapshots, and reserves stock in the **same** `db.batch` transaction through the `reserve_order_stock` SQL function (migration `0004`). That function raises `insufficient_stock`, which rolls the whole order back.
+  - Line items use `price_data` from DB cents. No Stripe Products or Prices are synced.
+  - Sessions expire after 31 minutes and are linked by `metadata.order_id`.
+- Order status only ever comes from Stripe. The webhook (`src/app/api/stripe/webhook/route.ts`), the success redirect, the cancel link and the admin reconcile button all call `syncCheckoutSession` (`src/lib/checkout.ts`). It re-retrieves the session from the API and applies conditional transitions (`src/db/queries/orders.ts`).
+  - Statuses: `pending` → `paid` | `processing` (async) → `paid` | `payment_failed`; `pending` → `expired` | `canceled`.
+  - A release changes the status and restocks in one statement, so it happens at most once.
+  - Payment arriving after a release re-reserves the stock, or sets `needs_review`, as does an amount mismatch.
+  - `stripe_events` logs events and skips ones already processed; the conditional transitions are what make duplicates harmless.
+  - Keep every new transition conditional and idempotent.
+- Not built yet: order history in `/account`, an admin order list, refunds, shipping, tax and order emails. The newsletter form only confirms client-side.
 - Sample photos were checked for visible third-party logos; check any new ones the same way.
 
 ## Design system
