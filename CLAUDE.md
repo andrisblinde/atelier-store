@@ -50,7 +50,8 @@ Request flow for auth: `authClient` (`src/lib/auth-client.ts`, browser, same-ori
 
 - Built: the homepage (`src/app/page.tsx`, sections in `src/components/home/`), the product detail page (`src/app/products/[slug]/page.tsx`, parts in `src/components/product/`) and the site header/footer (rendered from `layout.tsx`). Images are from Unsplash (host allowed in `next.config.ts`).
 - Also built: `/shop`, filterable category pages (`/[category]`), `/new-in`, editorial collections (`/collections/[slug]`), search (`/search`), and auth: `/sign-in`, `/sign-up`, `/account` (customers) and `/admin` (admins).
-- Not built yet: cart, checkout, orders, and account features beyond viewing details and signing out. "Add to bag" and the newsletter form only confirm client-side.
+- Shopping bag (`/bag`): stored in the `atelier_bag` cookie as `[productId, size, quantity]` references only, with no prices or stock (`src/lib/cart.ts`, `src/lib/bag-cookie.ts`). The cookie is untrusted input. Mutations go through the server actions in `src/app/bag/actions.ts`, which validate arguments and clamp every quantity to **live** `product_stock`. The bag page reads prices and stock live (`src/db/queries/cart.ts`), totals in cents, and shows over-stock lines reduced and missing or sold-out lines as unavailable. The cookie is not httpOnly so the header's client `BagLink` can show a count without making pages dynamic. The bag holds no stock reservation, so checkout must re-check stock atomically. The bag works signed out and is per browser.
+- Not built yet: checkout, orders, and account features beyond viewing details and signing out. The newsletter form only confirms client-side.
 - Sample photos were checked for visible third-party logos; check any new ones the same way.
 
 ## Design system

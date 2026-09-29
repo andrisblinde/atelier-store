@@ -103,7 +103,11 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
               )}
             </p>
 
-            <ProductPurchase sizes={product.sizes} oneSize={isOneSize(product)} />
+            <ProductPurchase
+              productId={product.id}
+              sizes={product.sizes}
+              oneSize={isOneSize(product)}
+            />
 
             <ul className="type-small mt-8 mb-10 space-y-1.5 text-ink-muted">
               <li>Complimentary express shipping</li>

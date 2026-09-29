@@ -1,19 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { addToBag } from "@/app/bag/actions";
+import { BAG_CHANGE_EVENT, bagErrorMessage } from "@/lib/cart";
 import { stockState, type ProductSize } from "@/lib/product";
 
 type ProductPurchaseProps = {
+  productId: string;
   sizes: ProductSize[];
   oneSize: boolean;
 };
 
-// There is no cart yet: adding only confirms locally.
-export function ProductPurchase({ sizes, oneSize }: ProductPurchaseProps) {
+/*
+ * Size selection and "Add to bag". Stock shown here comes from the ISR page and
+ * can be minutes old; addToBag checks live stock and may clamp or refuse.
+ */
+export function ProductPurchase({ productId, sizes, oneSize }: ProductPurchaseProps) {
   const [selected, setSelected] = useState<string | null>(oneSize ? sizes[0].label : null);
   const [error, setError] = useState(false);
-  const [added, setAdded] = useState(false);
+  const [status, setStatus] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const soldOut = sizes.every((size) => size.stock <= 0);
   const selectedSize = sizes.find((size) => size.label === selected);
@@ -45,7 +52,23 @@ export function ProductPurchase({ sizes, oneSize }: ProductPurchaseProps) {
           setError(true);
           return;
         }
-        setAdded(true);
+        startTransition(async () => {
+          const result = await addToBag(productId, selected, 1);
+          window.dispatchEvent(new Event(BAG_CHANGE_EVENT));
+          setStatus(
+            !result.ok
+              ? { tone: "error", text: bagErrorMessage[result.reason] }
+              : result.clamped
+                ? {
+                    tone: "error",
+                    text: `Only ${result.available} available${oneSize ? "" : ` in ${selected}`}. Your bag has ${result.quantity}.`,
+                  }
+                : {
+                    tone: "success",
+                    text: `Added to your bag${oneSize ? "" : ` in size ${selected}`}.`,
+                  },
+          );
+        });
       }}
     >
       {!oneSize && (
@@ -80,7 +103,7 @@ export function ProductPurchase({ sizes, oneSize }: ProductPurchaseProps) {
                     onChange={() => {
                       setSelected(size.label);
                       setError(false);
-                      setAdded(false);
+                      setStatus(null);
                     }}
                     className="sr-only"
                   />
@@ -104,11 +127,22 @@ export function ProductPurchase({ sizes, oneSize }: ProductPurchaseProps) {
       )}
 
       <div className="space-y-3">
-        <button type="submit" className="btn btn-primary w-full">
-          Add to bag
+        <button type="submit" className="btn btn-primary w-full" disabled={pending}>
+          {pending ? "Adding…" : "Add to bag"}
         </button>
-        <p role="status" className="type-small text-success">
-          {added && `Added to your bag${oneSize ? "" : ` in size ${selected}`}.`}
+        <p
+          role="status"
+          className={`type-small ${status?.tone === "error" ? "text-sale" : "text-success"}`}
+        >
+          {status?.text}
+          {status?.tone === "success" && (
+            <>
+              {" "}
+              <Link href="/bag" className="link">
+                View bag
+              </Link>
+            </>
+          )}
         </p>
       </div>
     </form>
