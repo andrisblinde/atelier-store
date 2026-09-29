@@ -17,10 +17,10 @@ export function SiteHeader() {
           <div className="flex items-center">
             <MobileMenu />
             <nav aria-label="Primary" className="hidden lg:block">
-              <ul className="flex items-center gap-7">
+              <ul className="flex items-center gap-4 xl:gap-7">
                 {primaryNav.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} className="type-label link-quiet">
+                    <Link href={item.href} className="type-label link-quiet whitespace-nowrap">
                       {item.label}
                     </Link>
                   </li>

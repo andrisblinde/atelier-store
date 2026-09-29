@@ -1,11 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Price } from "@/components/price";
-import { isOnSale, productStock, type Product } from "@/lib/product";
+import { isNew, isOnSale, productStock, type Product } from "@/lib/product";
 
 export function ProductCard({ product }: { product: Product }) {
   const soldOut = productStock(product).status === "out-of-stock";
-  const badge = soldOut ? "Sold out" : isOnSale(product) ? "Sale" : product.badge;
+  const badge = soldOut
+    ? "Sold out"
+    : isOnSale(product)
+      ? "Sale"
+      : (product.badge ?? (isNew(product) ? "New" : undefined));
 
   return (
     <article className="group relative">

@@ -7,14 +7,20 @@ export type ProductImage = { src: string; alt: string };
 
 export type ProductSize = { label: string; stock: number };
 
+export type ProductCategory = { id: string; slug: string; name: string };
+
 export type Product = {
   id: string;
   slug: string;
   name: string;
-  category: { id: string; slug: string; name: string };
+  /* Primary category: the product type (Shoes, Outerwear, ...). */
+  category: ProductCategory;
+  /* Every category the product belongs to, primary first (e.g. Shoes, Women). */
+  categories: ProductCategory[];
   /* Whole currency units; the database stores cents. */
   price: number;
   compareAtPrice?: number;
+  /* Editorial label such as "Limited edition". "New" is derived from createdAt. */
   badge?: string;
   colour: string;
   description: string;
@@ -22,6 +28,7 @@ export type Product = {
   /* One-size pieces have a single "One size" entry. */
   sizes: ProductSize[];
   images: [ProductImage, ...ProductImage[]];
+  createdAt: Date;
 };
 
 export type StockState =
@@ -45,6 +52,12 @@ export const isOneSize = (product: Product) =>
 
 export const isOnSale = (product: Product) =>
   product.compareAtPrice !== undefined && product.compareAtPrice > product.price;
+
+const NEW_PRODUCT_DAYS = 30;
+
+/* Added within the last NEW_PRODUCT_DAYS. ISR pages evaluate this at render time. */
+export const isNew = (product: Product, now = Date.now()) =>
+  now - product.createdAt.getTime() < NEW_PRODUCT_DAYS * 24 * 60 * 60 * 1000;
 
 const priceFormat = new Intl.NumberFormat("en-US", {
   style: "currency",

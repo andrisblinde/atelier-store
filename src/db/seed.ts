@@ -1,11 +1,12 @@
 /*
  * Loads the sample catalogue into the database. Safe to re-run: categories
- * and products are upserted by slug and stock by (product, size).
+ * and products are upserted by slug and stock by (product, size). Each seeded
+ * product's category memberships are replaced with the ones listed here.
  * Run with `npm run db:seed`.
  */
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { db } from "./index";
-import { categories, products, productStock } from "./schema";
+import { categories, productCategories, products, productStock } from "./schema";
 import { seedProducts } from "./seed-data";
 
 const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -13,7 +14,7 @@ const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-
 const toCents = (amount: number) => Math.round(amount * 100);
 
 async function main() {
-  const categoryNames = [...new Set(seedProducts.map((product) => product.category))];
+  const categoryNames = [...new Set(seedProducts.flatMap((product) => product.categories))];
 
   const categoryRows = await db
     .insert(categories)
@@ -30,7 +31,6 @@ async function main() {
       seedProducts.map((product, i) => ({
         slug: product.slug,
         name: product.name,
-        categoryId: categoryIds.get(product.category)!,
         price: toCents(product.price),
         compareAtPrice:
           product.compareAtPrice === undefined ? null : toCents(product.compareAtPrice),
@@ -46,7 +46,6 @@ async function main() {
       target: products.slug,
       set: {
         name: sql`excluded.name`,
-        categoryId: sql`excluded.category_id`,
         price: sql`excluded.price`,
         compareAtPrice: sql`excluded.compare_at_price`,
         badge: sql`excluded.badge`,
@@ -59,6 +58,20 @@ async function main() {
     })
     .returning({ id: products.id, slug: products.slug });
   const productIds = new Map(productRows.map((row) => [row.slug, row.id]));
+
+  // The first listed category is the primary one (the product type).
+  const membershipRows = seedProducts.flatMap((product) =>
+    product.categories.map((name, i) => ({
+      productId: productIds.get(product.slug)!,
+      categoryId: categoryIds.get(name)!,
+      isPrimary: i === 0,
+    })),
+  );
+  // One batch runs as a single transaction, so no product is left without its primary.
+  await db.batch([
+    db.delete(productCategories).where(inArray(productCategories.productId, [...productIds.values()])),
+    db.insert(productCategories).values(membershipRows),
+  ]);
 
   const stockRows = seedProducts.flatMap((product) =>
     product.sizes.map((size, position) => ({
@@ -77,7 +90,7 @@ async function main() {
     });
 
   console.log(
-    `Seeded ${categoryRows.length} categories, ${productRows.length} products, ${stockRows.length} stock rows.`,
+    `Seeded ${categoryRows.length} categories, ${productRows.length} products, ${membershipRows.length} category memberships, ${stockRows.length} stock rows.`,
   );
 }
 

@@ -8,6 +8,13 @@
       "when": 1790563123910,
       "tag": "0000_windy_romulus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790651354238,
+      "tag": "0001_product_categories",
+      "breakpoints": true
     }
   ]
 }

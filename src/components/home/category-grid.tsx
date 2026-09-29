@@ -6,7 +6,12 @@ import { SectionHeading } from "@/components/section-heading";
 export function CategoryGrid() {
   return (
     <section aria-labelledby="categories-title" className="container-page section-space">
-      <SectionHeading id="categories-title" eyebrow="Shop by category" title="Explore the house" />
+      <SectionHeading
+        id="categories-title"
+        eyebrow="Shop by category"
+        title="Explore the house"
+        link={{ label: "Shop all", href: "/shop" }}
+      />
 
       <ul className="grid grid-cols-2 gap-x-grid-x gap-y-8 lg:grid-cols-4">
         {categories.map((category) => (

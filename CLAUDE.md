@@ -32,14 +32,15 @@ Request flow for auth: `authClient` (`src/lib/auth-client.ts`, browser, same-ori
 ## Database conventions
 
 - **The database is the only source of product data.** Never add hard-coded products or a static fallback in app code. A missing product is a `notFound()`. `src/db/seed-data.ts` is input for `npm run db:seed` only and must never be imported by app code.
-- Catalogue tables: `categories` 1─< `products` 1─< `product_stock` (`src/db/schema/catalog.ts`).
-  - Categories are product types (Outerwear, Bags, ...). The homepage shop-by tiles in `src/lib/catalog.ts` are editorial content, not categories.
+- Catalogue tables: `categories` >─< `products` through `product_categories`, and `products` 1─< `product_stock` (`src/db/schema/catalog.ts`).
+  - A product belongs to several categories: its product type (Outerwear, Bags, ...) plus groupings such as Women and Men. Exactly one membership per product is `is_primary`, the product type, which drives card labels, breadcrumbs and related products (`Product.category`; all memberships are `Product.categories`). In seed data the first entry of `categories` is the primary.
+  - The homepage shop-by tiles and the editorial collections (`/collections/*`) in `src/lib/catalog.ts` are editorial content, not categories.
   - Money is stored as integer cents. It is converted to whole units only in the mapping in `src/db/queries/products.ts`.
   - Stock is one row per (product, size), and one-size pieces use a single `"One size"` row. This is not a variant model: there is no per-size SKU, price or image.
 - Read products only through `src/db/queries/products.ts` (server only, since it imports `db`). It maps rows to the `Product` type in `src/lib/product.ts`. That file holds the client-safe types and helpers, so client components import from there, never from `@/db`.
 - Schema changes go through `db:generate` → review the SQL in `drizzle/` → `db:migrate`. Commit the migrations. Don't use `db:push` on the shared database.
 - Keep `src/db/seed.ts` idempotent by upserting on natural keys (category and product `slug`, and stock `(product_id, size)`).
-- Pages that read products use ISR (`revalidate = 300`), so rendered stock can be up to 5 minutes stale. Anything that commits stock (a cart or checkout) must read it live. `next build` prerenders known product slugs, so it needs a migrated, reachable database.
+- Pages that read products use ISR (`revalidate = 300`), so rendered stock can be up to 5 minutes stale. Category pages (`src/app/[category]/page.tsx`) are the exception: filters, sorting and pagination come from URL search params (`src/lib/shop-filters.ts`), so they render per request and filter, sort and paginate in SQL (`getCategoryProducts`). Don't load a whole category or the whole catalogue into a page. Anything that commits stock (a cart or checkout) must read it live. `next build` prerenders known product slugs, so it needs a migrated, reachable database.
 
 ## Current state
 

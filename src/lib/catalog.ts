@@ -1,7 +1,7 @@
 /*
- * Static editorial content for the homepage: hero, shop-by tiles,
- * collections and campaign blocks. Products live in the database
- * (src/db/queries/products.ts). Images are Unsplash photos served through
+ * Static editorial content for the homepage and collection pages: hero,
+ * shop-by tiles, collections and campaign blocks. Products live in the
+ * database (src/db/queries/products.ts); collections only curate them by slug. Images are Unsplash photos served through
  * next/image (the host is allowed in next.config.ts).
  */
 
@@ -10,6 +10,8 @@ export type Collection = {
   name: string;
   description: string;
   image: { src: string; alt: string };
+  /* Product slugs in display order. Slugs missing from the database are skipped. */
+  productSlugs: string[];
 };
 
 export type Category = {
@@ -84,6 +86,16 @@ export const collections: Collection[] = [
       src: unsplash("1550614000-4895a10e1bfd"),
       alt: "Two women in red sequinned and pleated eveningwear",
     },
+    productSlugs: [
+      "silk-slip-dress",
+      "sequin-column-gown",
+      "tiered-tulle-gown",
+      "crystal-evening-clutch",
+      "crystal-bow-sandal",
+      "pointed-leather-pump",
+      "sapphire-drop-earrings",
+      "pearl-pendant-necklace",
+    ],
   },
   {
     slug: "tailoring",
@@ -93,6 +105,14 @@ export const collections: Collection[] = [
       src: unsplash("1507679799987-c73779587ccf"),
       alt: "Man buttoning a dark suit jacket with a striped tie",
     },
+    productSlugs: [
+      "prince-of-wales-blazer",
+      "pinstripe-double-breasted-jacket",
+      "charcoal-wool-suit-jacket",
+      "pinstripe-wide-leg-trouser",
+      "cotton-poplin-shirt",
+      "leather-derby-shoe",
+    ],
   },
   {
     slug: "resort",
@@ -102,8 +122,70 @@ export const collections: Collection[] = [
       src: unsplash("1496747611176-843222e1e57c"),
       alt: "Woman in a floral wrap dress by the sea",
     },
+    productSlugs: [
+      "linen-shirt-dress",
+      "palm-print-wide-leg-trouser",
+      "linen-shift-dress",
+      "round-raffia-crossbody",
+      "leather-cross-strap-slide",
+      "crochet-knit-poncho",
+      "round-metal-sunglasses",
+    ],
   },
 ];
+
+/* Linked from the hero and campaign banner rather than the featured tiles. */
+const campaignCollections: Collection[] = [
+  {
+    slug: "outerwear",
+    name: "The Outerwear Edit",
+    description: "Tailored wool, oversized checks and soft leather, cut for the season ahead.",
+    image: {
+      src: unsplash("1539109136881-3be0616acf4b"),
+      alt: "Woman in a pale blue wool coat standing in a cathedral square",
+    },
+    productSlugs: [
+      "cotton-gabardine-trench",
+      "belted-wool-wrap-coat",
+      "camel-wool-overcoat",
+      "shearling-teddy-jacket",
+      "leather-biker-jacket",
+      "satin-bomber-jacket",
+    ],
+  },
+  {
+    slug: "essentials",
+    name: "Considered Essentials",
+    description: "The pieces you reach for every day, made to last for years.",
+    image: {
+      src: unsplash("1558769132-cb1aea458c5e"),
+      alt: "Rail of knitwear in cream, camel and taupe beside dried pampas grass",
+    },
+    productSlugs: [
+      "cashmere-crew-neck-sweater",
+      "chunky-rib-wool-jumper",
+      "organic-cotton-t-shirt",
+      "straight-leg-selvedge-jeans",
+      "cotton-poplin-shirt",
+      "leather-chelsea-boot",
+    ],
+  },
+];
+
+export const allCollections = [...collections, ...campaignCollections];
+
+export const getCollection = (slug: string) =>
+  allCollections.find((collection) => collection.slug === slug);
+
+/*
+ * Intro copy for category pages that need more than the generic line. Which
+ * products belong to a category lives in the database (product_categories).
+ */
+export const categoryIntros: Record<string, string> = {
+  women:
+    "Ready-to-wear, shoes, bags and jewellery for women, from everyday essentials to evening.",
+  men: "Tailoring, outerwear, knitwear and shoes for men, cut to last.",
+};
 
 export const editorial = {
   eyebrow: "The Atelier Journal",
