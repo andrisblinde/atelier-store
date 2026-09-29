@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { OrderItems } from "@/components/order/order-items";
+import { orderReference } from "@/components/order/order-status";
 import { ListingHeader } from "@/components/product-listing";
 import { getOrderBySession } from "@/db/queries/orders";
 import type { OrderStatus } from "@/db/schema";
@@ -57,32 +58,7 @@ export default async function ConfirmationPage({
       <ListingHeader eyebrow="Checkout" title={title} intro={intro} />
       <div className="container-page grid items-start gap-10 pb-section lg:grid-cols-[1fr_22rem] lg:gap-16">
         <section aria-label="Order items">
-          <ul className="divide-y border-y">
-            {order.items.map((item) => (
-              <li
-                key={`${item.productSlug}:${item.size}`}
-                className="grid grid-cols-[5.5rem_1fr_auto] items-start gap-4 py-6 sm:grid-cols-[7rem_1fr_auto] sm:gap-6"
-              >
-                <div className="media-frame">
-                  <Image src={item.image.src} alt={item.image.alt} fill sizes="7rem" />
-                </div>
-                <div className="space-y-1">
-                  <h2 className="type-small">
-                    <Link href={`/products/${item.productSlug}`} className="link-quiet">
-                      {item.productName}
-                    </Link>
-                  </h2>
-                  {item.size !== "One size" && (
-                    <p className="type-small text-ink-muted">Size: {item.size}</p>
-                  )}
-                  <p className="type-small text-ink-muted">Quantity: {item.quantity}</p>
-                </div>
-                <p className="type-price">
-                  {formatPrice((item.unitPriceCents * item.quantity) / 100)}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <OrderItems items={order.items} />
         </section>
 
         <aside aria-labelledby="order-summary" className="bg-surface p-6">
@@ -92,7 +68,7 @@ export default async function ConfirmationPage({
           <dl className="mt-6 space-y-3">
             <div className="flex justify-between gap-4">
               <dt className="type-small text-ink-muted">Order</dt>
-              <dd className="type-small tabular-nums">{order.id.slice(0, 8).toUpperCase()}</dd>
+              <dd className="type-small tabular-nums">{orderReference(order.id)}</dd>
             </div>
             {order.email && (
               <div className="flex justify-between gap-4">

@@ -185,23 +185,72 @@ export async function getOrder(orderId: string) {
   return db.query.orders.findFirst({ where: (orders, { eq }) => eq(orders.id, orderId) });
 }
 
+const orderSummaryColumns = {
+  id: true,
+  status: true,
+  email: true,
+  subtotalCents: true,
+  totalCents: true,
+  currency: true,
+  createdAt: true,
+  paidAt: true,
+} as const;
+
+const orderItemsWith = {
+  items: {
+    columns: {
+      size: true,
+      quantity: true,
+      unitPriceCents: true,
+      productName: true,
+      productSlug: true,
+      image: true,
+    },
+  },
+} as const;
+
 /* The order and its items for the confirmation page, found by Checkout Session id. */
 export async function getOrderBySession(sessionId: string) {
   return db.query.orders.findFirst({
-    columns: { id: true, status: true, email: true, totalCents: true, currency: true, createdAt: true },
-    with: {
-      items: {
-        columns: {
-          size: true,
-          quantity: true,
-          unitPriceCents: true,
-          productName: true,
-          productSlug: true,
-          image: true,
-        },
-      },
-    },
+    columns: orderSummaryColumns,
+    with: orderItemsWith,
     where: (orders, { eq }) => eq(orders.stripeCheckoutSessionId, sessionId),
+  });
+}
+
+/*
+ * Orders a customer placed, meaning Checkout completed: paid, processing or
+ * failed. Abandoned checkouts (pending, expired, canceled) are not orders to
+ * the customer. Guest orders are not linked to an account.
+ */
+export const CUSTOMER_ORDER_STATUSES = ["paid", "processing", "payment_failed"] as const;
+
+/*
+ * Always scoped by the caller's user id, so a customer can only ever read
+ * their own orders. Pages pass the id from requireUser(), never from input.
+ */
+export async function getCustomerOrders(userId: string, limit = 50) {
+  return db.query.orders.findMany({
+    columns: { id: true, status: true, totalCents: true, createdAt: true },
+    with: { items: { columns: { quantity: true } } },
+    where: (orders, { and, eq, inArray }) =>
+      and(eq(orders.userId, userId), inArray(orders.status, [...CUSTOMER_ORDER_STATUSES])),
+    orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+    limit,
+  });
+}
+
+/* One of the customer's orders, or undefined if it isn't theirs (or doesn't exist). */
+export async function getCustomerOrder(userId: string, orderId: string) {
+  return db.query.orders.findFirst({
+    columns: orderSummaryColumns,
+    with: orderItemsWith,
+    where: (orders, { and, eq, inArray }) =>
+      and(
+        eq(orders.id, orderId),
+        eq(orders.userId, userId),
+        inArray(orders.status, [...CUSTOMER_ORDER_STATUSES]),
+      ),
   });
 }
 
