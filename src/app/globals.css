@@ -1,0 +1,382 @@
+@import "tailwindcss";
+
+/*
+ * Atelier design system
+ * ---------------------
+ * Luxury-retail principles: a near-monochrome palette so product imagery
+ * carries the colour, one restrained sans-serif, small uppercase tracked
+ * labels for UI chrome, generous whitespace, square corners and hairline
+ * borders. Tokens live in @theme so each one also generates Tailwind
+ * utilities (bg-ink, text-ink-muted, border-line, px-gutter, max-w-page,
+ * aspect-product, tracking-label, ...).
+ */
+
+@theme {
+  /* Colour: neutrals do the work, status colours are functional only. */
+  --color-canvas: #ffffff; /* page background */
+  --color-surface: #f5f5f3; /* product image backdrop, soft panels */
+  --color-surface-strong: #ebebe8; /* hover/pressed on surfaces */
+  --color-ink: #111111; /* primary text, filled buttons */
+  --color-ink-hover: #3a3a3a; /* filled button hover */
+  --color-ink-muted: #5e5e5e; /* secondary text, meta, prices (AA on canvas) */
+  --color-ink-subtle: #8c8c8c; /* placeholders, disabled only (not body copy) */
+  --color-line: #e2e2df; /* hairline borders and dividers */
+  --color-line-strong: #111111; /* inputs, outlined buttons, active tabs */
+  --color-sale: #a4262c; /* reduced prices, errors */
+  --color-success: #1f6b45; /* confirmations, in-stock */
+
+  /* Typography */
+  --text-2xs: 0.6875rem; /* 11px, labels and eyebrows */
+  --text-2xs--line-height: 1.35;
+  --tracking-label: 0.12em;
+  --tracking-display: -0.03em;
+  --tracking-heading: -0.015em;
+
+  /* Spacing: fluid gutters and section rhythm (px-gutter, py-section, ...) */
+  --spacing-gutter: clamp(1rem, 0.6rem + 1.8vw, 2.5rem);
+  --spacing-section: clamp(3rem, 1.8rem + 5vw, 7.5rem);
+  --spacing-header: clamp(3.5rem, 3.1rem + 1.2vw, 4.5rem);
+  --spacing-announcement: 2.25rem; /* promo bar above the header */
+  --spacing-grid-x: clamp(0.25rem, 0.1rem + 0.6vw, 1rem);
+  --spacing-grid-y: clamp(2rem, 1.6rem + 1.6vw, 3.5rem);
+
+  /* Containers (max-w-page, max-w-content, max-w-prose-narrow) */
+  --container-page: 100rem; /* 1600px, full storefront width */
+  --container-content: 75rem; /* 1200px, checkout, account, editorial */
+  --container-prose-narrow: 40rem; /* 640px, long-form text, forms */
+
+  /* Breakpoints: Tailwind defaults (sm 40rem, md 48rem, lg 64rem, xl 80rem,
+     2xl 96rem) plus one for very wide screens. */
+  --breakpoint-3xl: 120rem;
+
+  /* Imagery ratios */
+  --aspect-product: 3 / 4;
+  --aspect-editorial: 4 / 5;
+  --aspect-hero: 16 / 9;
+
+  /* Motion */
+  --ease-atelier: cubic-bezier(0.2, 0, 0, 1);
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: var(--ease-atelier);
+}
+
+/* Fonts come from next/font CSS variables set on <html>, so reference them inline. */
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  /* Tailwind v4 defaults borders to currentColor; hairlines are the house style. */
+  *,
+  ::before,
+  ::after,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-line);
+  }
+
+  html {
+    color-scheme: light;
+    scroll-padding-top: var(--spacing-header);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 500;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--color-ink);
+    color: var(--color-canvas);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Type roles. Headings scale fluidly, so no breakpoint overrides needed. */
+/* ------------------------------------------------------------------ */
+
+@utility type-display {
+  font-size: clamp(2.5rem, 1.5rem + 4.4vw, 5.5rem);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: var(--tracking-display);
+}
+
+@utility type-h1 {
+  font-size: clamp(1.75rem, 1.35rem + 1.7vw, 2.75rem);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: var(--tracking-heading);
+}
+
+@utility type-h2 {
+  font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.875rem);
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: var(--tracking-heading);
+}
+
+@utility type-h3 {
+  font-size: 1.125rem;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+@utility type-body {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+@utility type-small {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* Uppercase tracked micro-type: nav items, buttons, eyebrows, filters. */
+@utility type-label {
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+@utility type-price {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ */
+/* Layout primitives                                                   */
+/* ------------------------------------------------------------------ */
+
+@utility container-page {
+  width: 100%;
+  max-width: var(--container-page);
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+@utility container-content {
+  width: 100%;
+  max-width: calc(var(--container-content) + 2 * var(--spacing-gutter));
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+@utility container-prose {
+  width: 100%;
+  max-width: calc(var(--container-prose-narrow) + 2 * var(--spacing-gutter));
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+/* Vertical rhythm between page sections. */
+@utility section-space {
+  padding-block: var(--spacing-section);
+}
+
+/* Product listing grid: 2 columns on phones, 3 on tablets, 4 on desktop. */
+@utility product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--spacing-grid-x);
+  row-gap: var(--spacing-grid-y);
+
+  @variant md {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @variant xl {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Image frame: fixed ratio, neutral backdrop while loading, cover-fit child. */
+@utility media-frame {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: var(--aspect-product);
+  background-color: var(--color-surface);
+
+  & > :is(img, video, picture) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+@utility divider {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons: square, uppercase label type, 48px touch target.            */
+/* Compose as `btn btn-primary`, `btn btn-secondary btn-sm`, etc.       */
+/* ------------------------------------------------------------------ */
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding-inline: 2rem;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 0;
+  font-size: var(--text-2xs);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--default-transition-duration);
+  transition-timing-function: var(--default-transition-timing-function);
+
+  &:disabled,
+  &[aria-disabled="true"] {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+@utility btn-primary {
+  background-color: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-canvas);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--color-ink-hover);
+      border-color: var(--color-ink-hover);
+    }
+  }
+}
+
+@utility btn-secondary {
+  background-color: transparent;
+  border-color: var(--color-line-strong);
+  color: var(--color-ink);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--color-ink);
+      color: var(--color-canvas);
+    }
+  }
+}
+
+/* For use over imagery. */
+@utility btn-inverse {
+  background-color: var(--color-canvas);
+  border-color: var(--color-canvas);
+  color: var(--color-ink);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: transparent;
+      color: var(--color-canvas);
+    }
+  }
+}
+
+@utility btn-sm {
+  min-height: 2.5rem;
+  padding-inline: 1.25rem;
+}
+
+@utility btn-icon {
+  min-height: 2.75rem;
+  width: 2.75rem;
+  padding-inline: 0;
+  border-color: transparent;
+  background-color: transparent;
+}
+
+/* ------------------------------------------------------------------ */
+/* Links                                                               */
+/* ------------------------------------------------------------------ */
+
+/* Inline text link: underlined at rest, underline drops away on hover. */
+@utility link {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: currentColor;
+  transition-property: text-decoration-color, color;
+  transition-duration: var(--default-transition-duration);
+
+  @media (hover: hover) {
+    &:hover {
+      text-decoration-color: transparent;
+    }
+  }
+}
+
+/* Navigation, footer and utility links: plain at rest, underline on hover. */
+@utility link-quiet {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+  text-decoration-color: transparent;
+  transition-property: text-decoration-color, color;
+  transition-duration: var(--default-transition-duration);
+
+  @media (hover: hover) {
+    &:hover {
+      text-decoration-color: currentColor;
+    }
+  }
+
+  &[aria-current="page"] {
+    text-decoration-color: currentColor;
+  }
+}
