@@ -15,6 +15,13 @@
       "when": 1790651354238,
       "tag": "0001_product_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790656499305,
+      "tag": "0002_better_auth",
+      "breakpoints": true
     }
   ]
 }

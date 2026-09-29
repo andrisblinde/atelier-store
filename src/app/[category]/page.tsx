@@ -125,7 +125,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps<"
             </div>
           )}
 
-          <Pagination pathname={pathname} filters={filters} totalPages={totalPages} />
+          <Pagination
+            page={filters.page}
+            totalPages={totalPages}
+            href={(page) => filtersHref(pathname, { ...filters, page })}
+          />
         </section>
       </div>
     </main>

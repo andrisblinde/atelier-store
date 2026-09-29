@@ -2,7 +2,7 @@
 
 import { useId, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { SORT_OPTIONS, type SortKey } from "@/lib/shop-filters";
+import { SORT_OPTIONS } from "@/lib/shop-filters";
 
 /*
  * A plain GET form, so filtering works without JavaScript. With it, checkbox
@@ -69,7 +69,15 @@ export function FilterForm({
 }
 
 /* Lives in the results toolbar but belongs to the filter form via `form`. */
-export function SortSelect({ form, value }: { form: string; value: SortKey }) {
+export function SortSelect({
+  form,
+  value,
+  options = SORT_OPTIONS,
+}: {
+  form: string;
+  value: string;
+  options?: readonly { value: string; label: string }[];
+}) {
   const id = useId();
   return (
     <div className="flex items-center gap-3">
@@ -84,7 +92,7 @@ export function SortSelect({ form, value }: { form: string; value: SortKey }) {
         className="type-small min-h-10 border border-line-strong bg-canvas px-3"
         onChange={(event) => event.currentTarget.form?.requestSubmit()}
       >
-        {SORT_OPTIONS.map((option) => (
+        {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

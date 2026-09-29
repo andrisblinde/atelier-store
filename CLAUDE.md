@@ -14,6 +14,7 @@ Next.js 16 (App Router) + React 19 + TypeScript (strict), Tailwind CSS v4 (via `
 - `npm run db:generate` / `db:migrate` / `db:push` / `db:studio`: drizzle-kit (schema from `src/db/schema`, migrations written to `drizzle/`)
 - `drizzle-kit` is pinned and patched (`patches/`, applied by `patch-package` on `postinstall`) so Studio only accepts requests from `https://local.drizzle.studio`. Upstream allows any origin to run SQL with `.env` credentials. When upgrading drizzle-kit, check whether upstream fixed this, and re-create or drop the patch.
 - `npm run db:seed`: loads the sample catalogue into the database (tsx, reads `.env`)
+- `npm run auth:set-role -- <email> <admin|customer>`: the only way to grant or remove admin
 
 There is no test framework set up yet.
 
@@ -27,6 +28,9 @@ Request flow for auth: `authClient` (`src/lib/auth-client.ts`, browser, same-ori
 
 - `db` is created with `schema` imported from `src/db/schema/index.ts`. Every table must be defined under `src/db/schema/` and re-exported from that `index.ts`, both for the relational query API and for drizzle-kit.
 - In `auth.ts`, the `nextCookies()` plugin must stay **last** in `plugins` so server actions can set auth cookies.
+- Auth is email/password only (no social login, password reset, email verification or 2FA yet). Tables live in `src/db/schema/auth.ts`, generated with `npx auth@1.7.6 generate` and then hand-adjusted (see its header comment). Sessions: 30 days, sliding, no cookie cache. Rate limits are stored in the `rate_limit` table.
+- Read the session only through `src/lib/session.ts`: `getSession`, `requireUser(returnTo)`, `requireAdmin()` (404 for non-admins) and `safeNext` for post-sign-in redirects. Call them in every protected page and in admin data functions (`src/db/queries/users.ts`), not only in a layout. Don't read the session in the root layout or header, or every page becomes dynamic.
+- `user.role` is `"customer"` (default) or `"admin"`, declared with `input: false` so no request can set it. Sign-in/up/out go through `authClient` (HTTP), not server actions, so Better Auth's rate limiting and origin checks apply. Better Auth trusts only `BETTER_AUTH_URL`'s origin, so a server on another port needs that variable to match.
 - The Neon HTTP driver does not support interactive transactions (`db.transaction`); use `db.batch` or switch to the `neon-serverless` (WebSocket) driver if transactions are needed.
 
 ## Database conventions
@@ -44,9 +48,9 @@ Request flow for auth: `authClient` (`src/lib/auth-client.ts`, browser, same-ori
 
 ## Current state
 
-- Better Auth's tables don't exist yet. Generate them with `npx @better-auth/cli generate`, put them in `src/db/schema/`, export them from `index.ts`, then run `db:generate` + `db:migrate`.
 - Built: the homepage (`src/app/page.tsx`, sections in `src/components/home/`), the product detail page (`src/app/products/[slug]/page.tsx`, parts in `src/components/product/`) and the site header/footer (rendered from `layout.tsx`). Images are from Unsplash (host allowed in `next.config.ts`).
-- Not built yet: listing/category routes (`/women`, `/bags`, `/collections/*`, ...), search, account and cart. "Add to bag" and the newsletter form only confirm client-side.
+- Also built: `/shop`, filterable category pages (`/[category]`), `/new-in`, editorial collections (`/collections/[slug]`), search (`/search`), and auth: `/sign-in`, `/sign-up`, `/account` (customers) and `/admin` (admins).
+- Not built yet: cart, checkout, orders, and account features beyond viewing details and signing out. "Add to bag" and the newsletter form only confirm client-side.
 - Sample photos were checked for visible third-party logos; check any new ones the same way.
 
 ## Design system

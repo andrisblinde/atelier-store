@@ -240,17 +240,15 @@ export function ActiveFilters({
 
 /* Numbered pages with first/last and the current page's neighbours. */
 export function Pagination({
-  pathname,
-  filters,
+  page: current,
   totalPages,
+  href,
 }: {
-  pathname: string;
-  filters: ShopFilters;
+  page: number;
   totalPages: number;
+  href: (page: number) => string;
 }) {
   if (totalPages <= 1) return null;
-  const current = filters.page;
-  const href = (page: number) => filtersHref(pathname, { ...filters, page });
 
   const pages: (number | "gap")[] = [];
   for (let page = 1; page <= totalPages; page++) {

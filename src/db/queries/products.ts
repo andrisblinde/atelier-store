@@ -17,7 +17,9 @@ import {
   max,
   min,
   ne,
+  or,
   sql,
+  type AnyColumn,
   type SQL,
 } from "drizzle-orm";
 import { db } from "@/db";
@@ -29,6 +31,7 @@ import {
   type ProductImageData,
 } from "@/db/schema";
 import type { Product } from "@/lib/product";
+import type { SearchState } from "@/lib/search";
 import { compareSizes, PAGE_SIZE, type ShopFilters } from "@/lib/shop-filters";
 
 const withRelations = {
@@ -89,6 +92,15 @@ export const getProductBySlug = cache(async (slug: string) => {
 
 export async function getProductSlugs() {
   return db.query.products.findMany({ columns: { slug: true } });
+}
+
+/* Catalogue totals for the admin overview. */
+export async function getCatalogueCounts() {
+  const [[productRow], [categoryRow]] = await db.batch([
+    db.select({ total: count() }).from(products),
+    db.select({ total: count() }).from(categories),
+  ]);
+  return { products: productRow?.total ?? 0, categories: categoryRow?.total ?? 0 };
 }
 
 /* Cached per request so generateMetadata and the page share one query. */
@@ -262,18 +274,83 @@ export async function getCategoryProducts(categoryId: string, filters: ShopFilte
     db.select({ total: count() }).from(products).where(where),
   ]);
 
-  const ids = pageRows.map((row) => row.id);
-  const rows =
-    ids.length === 0
-      ? []
-      : await db.query.products.findMany({
-          with: withRelations,
-          where: (products, { inArray }) => inArray(products.id, ids),
-        });
+  return {
+    products: await getProductsInOrder(pageRows.map((row) => row.id)),
+    total: totalRow?.total ?? 0,
+  };
+}
+
+/* Full products for a page of ids, in the ids' order. */
+async function getProductsInOrder(ids: string[]) {
+  if (ids.length === 0) return [];
+  const rows = await db.query.products.findMany({
+    with: withRelations,
+    where: (products, { inArray }) => inArray(products.id, ids),
+  });
   const byId = new Map(rows.map((row) => [row.id, toProduct(row)]));
+  return ids.flatMap((id) => byId.get(id) ?? []);
+}
+
+/*
+ * Case-insensitive Postgres regex matching the term at the start of a word
+ * (\m), so "men" does not match "women" but "boot" matches "boots". Regex
+ * metacharacters in user input are escaped so they match literally.
+ */
+const wordStart = (term: string) => `\\m${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`;
+const matches = (column: SQL | AnyColumn, term: string) =>
+  sql`${column} ~* ${wordStart(term)}`;
+
+/*
+ * Every term must start a word in the name, colour, description, details or
+ * one of the product's category names (so "women coat" or "black silk" work).
+ * "Relevance" puts products whose name contains the whole query first.
+ * Filtering, counting and paging run in SQL, one page at a time.
+ */
+export async function searchProducts({ query, terms, sort, page }: SearchState) {
+  if (terms.length === 0) return { products: [], total: 0 };
+
+  const where = and(
+    ...terms.map((term) =>
+      or(
+        matches(products.name, term),
+        matches(products.colour, term),
+        matches(products.description, term),
+        matches(sql`array_to_string(${products.details}, ' ')`, term),
+        inArray(
+          products.id,
+          db
+            .select({ productId: productCategories.productId })
+            .from(productCategories)
+            .innerJoin(categories, eq(categories.id, productCategories.categoryId))
+            .where(matches(categories.name, term)),
+        ),
+      ),
+    ),
+  );
+  const order = {
+    relevance: [
+      sql`(${matches(products.name, query)}) desc`,
+      desc(products.createdAt),
+      asc(products.id),
+    ],
+    newest: [desc(products.createdAt), asc(products.id)],
+    "price-asc": [asc(products.price), desc(products.createdAt), asc(products.id)],
+    "price-desc": [desc(products.price), desc(products.createdAt), asc(products.id)],
+  }[sort];
+
+  const [pageRows, [totalRow]] = await db.batch([
+    db
+      .select({ id: products.id })
+      .from(products)
+      .where(where)
+      .orderBy(...order)
+      .limit(PAGE_SIZE)
+      .offset((page - 1) * PAGE_SIZE),
+    db.select({ total: count() }).from(products).where(where),
+  ]);
 
   return {
-    products: ids.flatMap((id) => byId.get(id) ?? []),
+    products: await getProductsInOrder(pageRows.map((row) => row.id)),
     total: totalRow?.total ?? 0,
   };
 }
