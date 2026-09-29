@@ -1,0 +1,20 @@
+diff --git a/node_modules/drizzle-kit/bin.cjs b/node_modules/drizzle-kit/bin.cjs
+index c28f3e4..669d0e2 100644
+--- a/node_modules/drizzle-kit/bin.cjs
++++ b/node_modules/drizzle-kit/bin.cjs
+@@ -90061,7 +90061,14 @@ var init_studio2 = __esm({
+         await next();
+         ctx.header("Access-Control-Allow-Private-Network", "true");
+       });
+-      app.use(cors());
++      app.use(async (ctx, next) => {
++        const origin = ctx.req.header("origin");
++        if (origin !== void 0 && origin !== "https://local.drizzle.studio") {
++          return ctx.text("Forbidden origin", 403);
++        }
++        await next();
++      });
++      app.use(cors({ origin: "https://local.drizzle.studio" }));
+       app.onError((err2, ctx) => {
+         console.error(err2);
+         return ctx.json({
