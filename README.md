@@ -29,7 +29,13 @@ Better Auth's tables are not defined yet. Generate them with `npx @better-auth/c
 - `npm run db:generate`: create SQL migrations from the schema
 - `npm run db:migrate`: apply migrations
 - `npm run db:push`: push schema directly (prototyping)
-- `npm run db:studio`: open Drizzle Studio
+- `npm run db:studio`: disabled for security; use the Neon console's SQL Editor.
+
+Drizzle Kit 0.31.11's Studio proxy accepts SQL from arbitrary browser origins
+without authentication, using the credentials in `DATABASE_URL`. Binding it to
+localhost does not prevent this browser attack. Do not bypass the disabled script
+by running `npx drizzle-kit studio` directly. Re-enable Studio only after verifying
+that its proxy authenticates requests and rejects untrusted browser origins.
 
 ## Scripts
 

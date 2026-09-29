@@ -11,7 +11,8 @@ Next.js 16 (App Router) + React 19 + TypeScript (strict), Tailwind CSS v4 (via `
 - `npm run dev` / `npm run build` / `npm run start`
 - `npm run lint`: ESLint 9 flat config (Next core-web-vitals + TypeScript presets)
 - `npm run typecheck`: runs `next typegen` first, then `tsc --noEmit`. Typegen generates global route types such as `LayoutProps<"/">` / `PageProps`, so plain `tsc` fails without it.
-- `npm run db:generate` / `db:migrate` / `db:push` / `db:studio`: drizzle-kit (schema from `src/db/schema`, migrations written to `drizzle/`)
+- `npm run db:generate` / `db:migrate` / `db:push`: drizzle-kit (schema from `src/db/schema`, migrations written to `drizzle/`)
+- `npm run db:studio`: disabled because the Studio SQL proxy lacks authentication and origin restrictions. Use the Neon console's SQL Editor; do not run `drizzle-kit studio` directly. See README.md for re-enabling requirements.
 - `npm run db:seed`: loads the sample catalogue into the database (tsx, reads `.env`)
 
 There is no test framework set up yet.
